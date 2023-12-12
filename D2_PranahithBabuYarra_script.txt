@@ -1,0 +1,300 @@
+--Team: Maverick
+--Member #: 3
+--Name: Pranahith Babu Yarra - IW23456
+
+--Team Member Names:
+--Jaya Raj Goru - ZF61058
+--Sai Vikas Amaraneni - FS93533
+--Preetham Madhamsetty - FJ09370
+--Sai Rajesh Rapelli - HD49179
+--Ameenur Rahman Khan - DJ46492
+
+
+set serveroutput on;
+
+--drop tables
+drop table invoices;
+drop table credit_cards;
+drop table orders;
+drop table products;
+drop table product_categories;
+drop table customers;
+
+--create customers table
+CREATE table customers (
+	cust_ID INT,
+	cust_name VARCHAR(100),
+	cust_city VARCHAR(100),
+	cust_email VARCHAR(100),
+	cust_state VARCHAR(100),
+	cust_zip NUMBER(5),
+	PRIMARY KEY (cust_ID)
+);
+
+--create product_categories table
+CREATE table product_categories (
+	category_ID INT,
+	category_name VARCHAR(100),
+	category_description VARCHAR(100),
+	PRIMARY KEY (category_ID)
+);
+
+--create products table
+CREATE table products (
+	prod_ID INT NOT NULL,
+	prod_name VARCHAR(100),
+	prod_quantity INT CONSTRAINT Valid_Quantity_Check CHECK (prod_quantity > 0),
+	prod_price FLOAT,
+	category_ID INT NOT NULL,
+	PRIMARY KEY (prod_ID),
+	FOREIGN KEY (category_ID) REFERENCES product_categories (category_ID)
+);
+
+--create orders table
+CREATE table orders (
+	order_ID INT,
+	cust_ID INT,
+	prod_ID INT,
+	order_quantity INT,
+	order_date DATE,
+	PRIMARY KEY (order_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (prod_ID) REFERENCES products(prod_ID)
+);
+
+--create credit_cards table
+CREATE table credit_cards (
+	creditcard_number INT NOT NULL,
+	cust_ID INT,
+	creditcard_type VARCHAR(100),
+	creditcard_expyear INT,
+	creditcard_expmonth INT,
+	PRIMARY KEY (creditcard_number),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID)	
+);
+
+--create invoices table
+CREATE table invoices (
+	invoice_ID INT,
+	order_ID INT,
+	cust_ID INT,
+	creditcard_number INT,
+	invoice_amount INT,
+	PRIMARY KEY (invoice_ID),
+	FOREIGN KEY (order_ID) REFERENCES orders(order_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (creditcard_number) REFERENCES credit_cards(creditcard_number)
+);
+
+--Insert into customers tables
+insert into customers values(1,'Preetham', 'Charloette','preetham@gmail.com', 'NC', '21338');
+insert into customers values(2,'Pranahith', 'Baltimore','pranahithbabu@gmail.com', 'MD', '21227');
+insert into customers values(3,'Jaya Raj', 'New York','jayaraj@gmail.com', 'NY', '20904');
+insert into customers values(4,'Sai Vikas', 'Phoenix', 'saivikas@gmail.com','AZ', '20850');
+insert into customers values(5,'Sai Rajesh', 'Ellicott City','sairajesh@gmail.com', 'MD', '21043');
+insert into customers values(6,'Ameenur Khan', 'Columbia', 'ameenurkhan@gmail.com','SC', '21044');
+
+--Insert into product_categories tables
+insert into product_categories values(1,'Clothing', 'Wide range of appareal suitable for daily wear');
+insert into product_categories values(2,'Electronics','Smartphone,tablets,Computers and laptops');
+insert into product_categories values(3,'Footwear', 'Step into fashion and comfort with our diverse range of footwear');
+insert into product_categories values(4,'Grocery', 'One step destination for essential food supplies');
+insert into product_categories values(5,'Furniture', 'Transform your living space with our furniture collection');
+
+--Insert into products tables
+insert into products values(1, '40inchTV', 100, 350, 2);
+insert into products values(2, 'T-shirt', 100, 30, 1);
+insert into products values(3, 'Nike shoes', 100, 45, 3);
+insert into products values(4, 'Sofa', 100, 1000, 5);
+insert into products values(5, 'Milk', 100, 4, 4);
+insert into products values(6, 'Chocolates', 100, 20, 4);
+insert into products values(7, 'Laptop', 100, 700, 2);
+insert into products values(8, 'Table', 100, 60, 5);
+
+--Insert into credit_cards tables
+insert into credit_cards values(44678, 1, 'VISA', 2028, 10);
+insert into credit_cards values(44679, 2, 'VISA', 2029, 08);
+insert into credit_cards values(44660, 3, 'VISA', 2030, 12);
+insert into credit_cards values(44681, 4, 'VISA', 2028, 10);
+insert into credit_cards values(47778, 5, 'AMEX', 2031, 10);
+insert into credit_cards values(47781, 6, 'AMEX', 2028, 10);
+insert into credit_cards values(58978, 1, 'DISCOVER', 2028, 10);
+insert into credit_cards values(67085, 4, 'MASTERCARD', 2028, 10);
+
+--################# HELPER FUNCTIONS ############
+
+--1) FIND_CUSTOMER_ID(email): It finds the customer ID with the help of customer email
+create or replace function find_customer_id(v_email in customers.cust_email%type) return
+customers.cust_id%type as
+v_id customers.cust_id%type;
+begin
+    --Implicit cursor to retirve value and store it in a variable
+    select cust_id into v_id from customers where cust_email=v_email;
+    --It returns the customer ID
+    return v_id;
+exception
+    --When no rows returned, then this exception is executed
+    when no_data_found then
+    dbms_output.put_line('No customer found');
+    return -1;
+end;
+
+--3) FIND_PRODUCT_ID(product name): It finds the product ID with the help of product name
+create or replace function find_product_id(v_pname in products.prod_name%type) return
+products.prod_id%type as
+v_id products.prod_id%type;
+begin
+    --Implicit cursor to retirve value and store it in a variable
+    select prod_id into v_id from products where prod_name=v_pname;
+    --It returns the product ID
+    return v_id;
+exception
+    --When no rows returned, then this exception is executed
+    when no_data_found then
+    dbms_output.put_line('No product found');
+    return -1;
+end;
+
+--################# PROCEDURES/TASKS ############
+
+--7) Update_Inventory (Belongs to Member 2, this procedure is invoked in Place_Order procedure)
+create or replace procedure update_inventory(v_pid in products.prod_id%type, v_pquant in INT)
+is
+var_availableQuantity int;
+begin
+--Implicit cursor to retirve value and store it in a variable
+select prod_quantity into var_availableQuantity
+from products where prod_ID=v_pid;
+--Products table is updated with available stock
+update products
+set prod_quantity = var_availableQuantity-v_pquant
+where prod_ID=v_pid;
+--To save the database stage
+commit;
+dbms_output.put_line('Inventory Updated');
+exception
+--When no rows returned, then this exception is executed
+when no_data_found then
+    dbms_output.put_line('Product not found');
+when others then
+    dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+    dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+--13) Invoice_Customer (Belongs to Member 4, this prodcedure is invoked in Place_Order procedure)
+--Sequence is used for automatically incrementing the Invoice ID value.
+--Sequence is dropped initially and then created. It starts with value 1 and increments by 1.
+drop sequence inv_seq_id;
+
+create sequence inv_seq_id
+start with 1
+increment by 1;
+
+--This procedure will generate a invoice when the customer place a order.
+create or replace procedure invoice_customer(v_oId in invoices.order_ID%type,
+v_cEmail in customers.cust_email%type,v_ccNum in invoices.creditcard_number%type,
+v_invAmount in invoices.invoice_amount%type)
+as
+var_custId customers.cust_ID%type;
+begin
+--To check if customer exists or not
+var_custId:=find_customer_id(v_cEmail);
+if var_custId != -1 then
+    insert into invoices values(inv_seq_id.nextval, v_oId, var_custId, v_ccNum, v_invAmount);
+    dbms_output.put_line('Invoices created');
+    --To save the database stage
+    commit;
+else
+    dbms_output.put_line('Customer not found');
+end if;
+exception
+when others then
+    dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+    dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+--9) Place_Order
+--Sequence is used for automatically incrementing the Order ID value.
+--Sequence is dropped initially and then created. It starts with value 1 and increments by 1.
+drop sequence ord_seq_id;
+
+create sequence ord_seq_id
+start with 1
+increment by 1;
+
+--This procedure places the order as directed by the customer.
+create or replace procedure place_order(v_cemail in customers.cust_email%type,
+v_pname in products.prod_name%type,v_pquant in products.prod_quantity%type,
+v_ccnum in credit_cards.creditcard_number%type,v_odate orders.order_date%type)
+as
+var_cId customers.cust_ID%type;
+var_pId products.prod_ID%type;
+var_invAmount invoices.invoice_amount%type;
+begin
+--Calling respective helper functions to retrieve associated values
+var_cId := find_customer_id(v_cemail);
+var_pId := find_product_id(v_pname);
+--Condition to check if both customer and products exists to place the order
+if var_cId!=-1 and var_pId!=-1 then
+    --Inventory is updated with new quantity of associated product based on product ID.
+    update_inventory(var_pId,v_pquant);
+    select prod_price*v_pquant into var_invAmount from products where prod_ID=var_pId;
+    insert into orders values(ord_seq_id.nextval,var_cId,var_pId,v_pquant,v_odate);
+    --Invoice generated under customer who is associated with the purchase
+    invoice_customer(ord_seq_id.currval,v_cemail,v_ccnum,var_invAmount);
+    --To save the database stage
+    commit;
+    dbms_output.put_line('Order placed');
+else
+    dbms_output.put_line('Customer or Product doesnot exist');
+end if;
+exception
+when others then
+    dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+    dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+--10) Show_Orders:
+--This procedure is called to display the list of orders placed.
+create or replace procedure show_orders
+is
+var_ordersCount int;
+begin
+var_ordersCount := 0;
+--This loop will iterate all the orders individually and then correspondingly print.
+for i in (
+    select c.cust_name, p.prod_name, o.order_quantity, i.invoice_amount
+    from customers c, products p, orders o, invoices i
+    where c.cust_id=o.cust_id and o.order_id=i.order_id and p.prod_id=o.prod_id
+) loop
+    dbms_output.put_line('Customer Name: '||i.cust_name||', Product Name: '||i.prod_name||
+    ', Quantity Ordered: '||i.order_quantity||', Amount Charged: '||i.invoice_amount);
+var_ordersCount := var_ordersCount + 1;
+end loop;
+dbms_output.put_line('Total Orders: ' || var_ordersCount);
+--Condition to check if there are no orders.
+if var_ordersCount=0 then
+    dbms_output.put_line('There are no orders placed');
+end if;
+exception
+when others then
+    dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+    dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+
+--Before running final anonymous block
+select * from products;
+select * from invoices;
+select * from orders;
+
+--Anonymous block to call the required procedures for Member 3
+begin
+    place_order('pranahithbabu@gmail.com','40inchTV',2,44679,sysdate);
+    show_orders;
+end;
+
+--After running final anonymous block
+select * from products;
+select * from invoices;
+select * from orders;

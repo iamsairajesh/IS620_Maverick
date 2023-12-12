@@ -1,0 +1,177 @@
+--Team: Maverick
+--Member #: 5
+--Name: Preetham Madhamsetty - FJ09370
+
+--Team Member Names:
+--Jaya Raj Goru - ZF61058
+--Pranahith Babu Yarra - IW23456
+--Sai Vikas Amaraneni - FS93533
+--Sai Rajesh Rapelli - HD49179
+--Ameenur Rahman Khan - DJ46492
+
+
+set serveroutput on;
+
+--drop tables
+drop table invoices;
+drop table credit_cards;
+drop table orders;
+drop table products;
+drop table product_categories;
+drop table customers;
+
+--create customers table
+CREATE table customers (
+	cust_ID INT,
+	cust_name VARCHAR(100),
+	cust_city VARCHAR(100),
+	cust_email VARCHAR(100),
+	cust_state VARCHAR(100),
+	cust_zip NUMBER(5),
+	PRIMARY KEY (cust_ID)
+);
+
+--create product_categories table
+CREATE table product_categories (
+	category_ID INT,
+	category_name VARCHAR(100),
+	category_description VARCHAR(100),
+	PRIMARY KEY (category_ID)
+);
+
+--create products table
+CREATE table products (
+	prod_ID INT NOT NULL,
+	prod_name VARCHAR(100),
+	prod_quantity INT CONSTRAINT Valid_Quantity_Check CHECK (prod_quantity > 0),
+	prod_price FLOAT,
+	category_ID INT NOT NULL,
+	PRIMARY KEY (prod_ID),
+	FOREIGN KEY (category_ID) REFERENCES product_categories (category_ID)
+);
+
+CREATE table reviews (
+	review_ID INT NOT NULL,
+	prod_ID INT,
+	review_email VARCHAR(100),
+	review_stars VARCHAR(5),
+	review_text VARCHAR(100),
+	PRIMARY KEY (review_ID),
+	FOREIGN KEY (prod_ID) REFERENCES products(prod_ID)
+);
+
+CREATE table recommendations (
+	rec_ID INT NOT NULL,
+	cust_ID INT,
+	rec_prodID INT,
+	rec_date DATE,
+	PRIMARY KEY (rec_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (rec_prodID) REFERENCES products(prod_ID)
+);
+
+--**************** INSERTING VALUES INTO CUSTOMERS, PRODUCT CATEGORIES, PRODUCTS TABLES ***************
+
+--Insert into customers tables
+insert into customers values(1,'Preetham', 'Charloette','preetham@gmail.com', 'NC', '21338');
+insert into customers values(2,'Pranahith', 'Baltimore','pranahithbabu@gmail.com', 'MD', '21227');
+insert into customers values(3,'Jaya Raj', 'New York','jayaraj@gmail.com', 'NY', '20904');
+insert into customers values(4,'Sai Vikas', 'Phoenix', 'saivikas@gmail.com','AZ', '20850');
+insert into customers values(5,'Sai Rajesh', 'Ellicott City','sairajesh@gmail.com', 'MD', '21043');
+insert into customers values(6,'Ameenur Khan', 'Columbia', 'ameenurkhan@gmail.com','SC', '21044');
+
+--Insert into product_categories tables
+insert into product_categories values(1,'Clothing', 'Wide range of appareal suitable for daily wear');
+insert into product_categories values(2,'Electronics','Smartphone,tablets,Computers and laptops');
+insert into product_categories values(3,'Footwear', 'Step into fashion and comfort with our diverse range of footwear');
+insert into product_categories values(4,'Grocery', 'One step destination for essential food supplies');
+insert into product_categories values(5,'Furniture', 'Transform your living space with our furniture collection');
+
+--Insert into products tables
+insert into products values(1, '40inchTV', 100, 350, 2);
+insert into products values(2, 'T-shirt', 100, 30, 1);
+insert into products values(3, 'Nike shoes', 100, 45, 3);
+insert into products values(4, 'Sofa', 100, 1000, 5);
+insert into products values(5, 'Milk', 100, 4, 4);
+insert into products values(6, 'Chocolates', 100, 20, 4);
+insert into products values(7, 'Laptop', 100, 700, 2);
+insert into products values(8, 'Table', 100, 60, 5);
+
+--***************** CREATING ADD REVIEW PROCEDURE ********************
+
+drop sequence rev_seq_id;
+
+create sequence rev_seq_id
+start with 1
+increment by 1;
+
+create or replace procedure add_review(v_email in reviews.review_email%type,
+v_stars in reviews.review_stars%type, v_pname in products.prod_name%type,
+v_text in reviews.review_text%type)
+as
+var_pid products.prod_id%type;
+begin
+var_pid := find_product_id(v_pname);
+if var_pid != -1 then
+    insert into reviews values(rev_seq_id.nextval,var_pid,v_email,v_stars,v_text);
+else
+    dbms_output.put_line('Selected product does not exist');
+end if;
+end;
+
+--******************** INSERTING VALUES INTO ADD REVIEW PROCEDURE **************
+begin
+add_review('preetham@gmail.com',2 , '40inchTV','not a good TV. It could be better');
+add_review('pranahithbabu@gmail.com',5,'Nike shoes', 'Excellent. This are the best shos for running');
+add_review('ameenurkhan@gmail.com',5 ,'Chocolates', 'Best for gifting');
+add_review('saivikas@gmail.com',4,'Table', 'Good and sturdy, useful for office setup');
+add_review('jayaraj@gmail.com',1,'Milk', 'do not buy, the product is expired');
+add_review('sairajesh@gmail.com',5,'T-shirt', 'Very comfortable and in affordable price, worth buying');
+end;
+
+--*************** Buy_Or_Beware PROCEDURE *****************
+
+create or replace procedure buy_or_beware(v_num in number)
+as
+cursor c1 is select avg(r.review_stars) as Average_Rating, p.prod_id, p.prod_name,
+stddev(r.review_stars) as StdDev_Stars
+from products p right join reviews r on p.prod_id=r.prod_id
+group by p.prod_id, p.prod_name
+order by Average_Rating desc;
+
+cursor c2 is select avg(r.review_stars) as Average_Rating, p.prod_id, p.prod_name,
+stddev(r.review_stars) as StdDev_Stars
+from products p right join reviews r on p.prod_id=r.prod_id
+group by p.prod_id, p.prod_name
+order by Average_Rating asc;
+
+var_bestCount number;
+var_worstCount number;
+begin
+var_bestCount := 0;
+var_worstCount := 0;
+
+dbms_output.put_line('Top rated products:');
+for i in c1 
+loop
+    exit when var_bestCount>=v_num or i.Average_Rating is null;
+    dbms_output.put_line('Average Stars: ' || i.Average_Rating||', Product ID: ' ||
+    i.prod_ID||', Product Name: ' || i.prod_name ||', Standard Deviation: ' ||
+    i.StdDev_Stars);
+    var_bestCount:=var_bestCount+1;
+end loop;
+
+dbms_output.put_line('Buyer Beware: Stay Away from...:');
+for i in c2 
+loop
+    exit when var_worstCount>=v_num or i.Average_Rating is null;
+    dbms_output.put_line('Average Stars: ' || i.Average_Rating||', Product ID: ' ||
+    i.prod_ID||', Product Name: ' || i.prod_name ||', Standard Deviation: ' ||
+    i.StdDev_Stars);
+    var_worstCount:=var_worstCount+1;
+end loop;
+end;
+
+begin
+buy_or_beware(7);
+end;

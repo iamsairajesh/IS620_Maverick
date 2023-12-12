@@ -1,0 +1,120 @@
+--Team: Maverick
+--Member #: 2
+--Name: Sai Vikas Amaraneni - FS93533
+
+--Team Member Names:
+--Jaya Raj Goru - ZF61058
+--Pranahith Babu Yarra - IW23456
+--Preetham Madhamsetty - FJ09370
+--Sai Rajesh Rapelli - HD49179
+--Ameenur Rahman Khan - DJ46492
+
+
+set serveroutput on;
+
+--drop tables
+drop table products;
+drop table product_categories;
+
+--create product_categories table
+CREATE table product_categories (
+	category_ID INT,
+	category_name VARCHAR(100),
+	category_description VARCHAR(100),
+	PRIMARY KEY (category_ID)
+);
+
+--create products table
+CREATE table products (
+	prod_ID INT NOT NULL,
+	prod_name VARCHAR(100),
+	prod_quantity INT CONSTRAINT Valid_Quantity_Check CHECK (prod_quantity > 0),
+	prod_price FLOAT,
+	category_ID INT NOT NULL,
+	PRIMARY KEY (prod_ID),
+	FOREIGN KEY (category_ID) REFERENCES product_categories (category_ID)
+);
+
+--################# HELPER FUNCTIONS ############
+
+--2) FIND_PRODUCT_CATEGORY_ID(category name)
+create or replace function find_product_category_id(v_catname in product_categories.category_name%type) return
+product_categories.category_id%type as
+v_id product_categories.category_id%type;
+begin
+    --To retrieve the category ID from the product_categories table using the specified category name.
+    select category_id into v_id from product_categories where category_name=v_catname;
+    --To return the category ID
+    return v_id;
+exception
+    --when no data is found, then this exception will be used.
+    when no_data_found then
+    dbms_output.put_line('No category found');
+    return -1;
+end;
+
+--################# PROCEDURES/TASKS ############
+--5) Add_Category
+drop sequence cat_seq_id;
+
+--creating a sequence 'cat_seq_id' to get unique values for category ID
+create sequence cat_seq_id
+start with 1
+increment by 1;
+
+create or replace procedure add_category(v_catId in product_categories.category_ID%type, v_catName in product_categories.category_name%type, v_catDesc in product_categories.category_description%type)
+is
+begin
+    -- Insert a new record into the 'product_categories' table with the specified category ID, Name, and Description
+    insert into product_categories values(v_catId, v_catName, v_catDesc);
+    dbms_output.put_line ('Product categories table updated');
+end;
+
+--6) Add_Product
+create or replace procedure add_product(v_pid in products.prod_ID%type, v_pname in products.prod_name%type,
+v_pquantity in products.prod_quantity%type, v_pprice in products.prod_price%type,
+v_catid in product_categories.category_ID%type, v_catname in product_categories.category_name%type)
+is
+var_catid product_categories.category_ID%type;
+begin
+--Use the function created earlier to get category ID based on category name.
+var_catID := find_product_category_id(v_catname);
+-- Insert a new record into the 'products' table with the provided values
+insert into products values(v_pid, v_pname, v_pquantity, v_pprice, v_catid);
+dbms_output.put_line ('Products table updated');
+exception
+--when no data is found, then this exception will be used.
+when others then
+ dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+ dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+--Before running anonymous block
+select * from product_categories;
+select * from products;
+
+
+--calling an anonymous block to get the required procedures for Member 2
+begin
+
+add_category(cat_seq_id.nextval,'Clothing', 'Wide range of appareal suitable for daily wear');
+add_category(cat_seq_id.nextval,'Electronics','Smartphone,tablets,Computers and laptops');
+add_category(cat_seq_id.nextval,'Footwear', 'Step into fashion and comfort with our diverse range of footwear');
+add_category(cat_seq_id.nextval,'Grocery', 'One step destination for essential food supplies');
+add_category(cat_seq_id.nextval,'Furniture', 'Transform your living space with our furniture collection');
+
+add_Product(prod_seq_id.nextval, '40inchTV', 100, 350, 2, 'Electronics');
+add_Product(prod_seq_id.nextval, 'T-shirt', 100, 30, 1, 'Clothing');
+add_product(prod_seq_id.nextval, 'Nike shoes', 100, 45, 3, 'Footwear');
+add_Product(prod_seq_id.nextval, 'Sofa', 100, 1000, 5, 'Furniture');
+add_Product(prod_seq_id.nextval, 'Milk', 100, 4, 4, 'Grocery');
+add_Product(prod_seq_id.nextval, 'Chocolates', 100, 20, 4, 'Grocery');
+add_Product(prod_seq_id.nextval, 'Laptop', 100, 700, 2, 'Electronics');
+add_Product(prod_seq_id.nextval, 'Table', 100, 60, 5, 'Furniture');
+
+end;
+
+
+--After running anonymous block
+select * from product_categories;
+select * from products;

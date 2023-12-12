@@ -1,0 +1,102 @@
+--Team: Maverick
+--Member #: 1
+--Name: Jaya Raj Goru - ZF61058
+
+
+--Team Member Names:
+--Sai Vikas Amaraneni - FS93533
+--Pranahith Babu Yarra - IW23456
+--Preetham Madhamsetty - FJ09370
+--Sai Rajesh Rapelli - HD49179
+--Ameenur Rahman Khan - DJ46492
+
+set serveroutput on;
+
+drop table customers;
+
+
+CREATE table customers (
+	cust_ID INT,
+	cust_name VARCHAR(100),
+	cust_city VARCHAR(100),
+	cust_email VARCHAR(100),
+	cust_state VARCHAR(100),
+	cust_zip NUMBER(5),
+	PRIMARY KEY (cust_ID)
+);
+
+CREATE table credit_cards (
+	creditcard_number INT NOT NULL,
+	cust_ID INT,
+	creditcard_type VARCHAR(100),
+	creditcard_expyear INT,
+	creditcard_expmonth INT,
+	PRIMARY KEY (creditcard_number),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID)
+);
+
+--1) Add_Customer
+DROP SEQUENCE custID_seq_ID;
+
+CREATE SEQUENCE custID_seq_ID 
+START with 1
+INCREMENT BY 1;
+
+create or replace procedure add_customer(v_custID IN INT, v_custName IN VARCHAR, v_custCity IN VARCHAR, v_custEmail IN VARCHAR, v_custState IN VARCHAR, v_custZipcode IN NUMBER)
+as
+begin
+    insert into customers values (v_custID, v_custName, v_custCity, v_custEmail, v_custState, v_custZipcode);
+end;
+
+
+--2) Show_all_customers_in_state
+create or replace procedure show_all_customers_in_state(v_state in customers.cust_state%type)
+as
+var_custId customers.cust_id%type;
+var_custName customers.cust_name%type;
+var_custEmail customers.cust_email%type;
+var_custAddress customers.cust_city%type;
+var_ccNum credit_cards.creditcard_number%type;
+var_ccType credit_cards.creditcard_type%type;
+cursor c1 is select c.cust_id, c.cust_name, c.cust_email, c.cust_city, cc.creditcard_number, cc.creditcard_type
+from customers c, credit_cards cc
+where c.cust_id = cc.cust_id and c.cust_state=v_state;
+begin
+open c1;
+loop
+fetch c1 into var_custId, var_custName, var_custEmail, var_custAddress, var_ccNum, var_ccType;
+if (var_custId is null) then
+    dbms_output.put_line('No customer belongs to given state');
+    exit;
+else
+    exit when c1%notfound;
+    dbms_output.put_line(var_custName || '  ' || var_custEmail || ' | '  || var_custAddress || ' | ' ||  var_ccNum || ' | ' ||  var_ccType);
+end if;
+end loop;
+end;
+
+
+select * from customers;
+
+BEGIN
+add_customer(custID_seq_ID.nextval,'Preetham', 'Charloette','preetham@gmail.com', 'NC', '21338');
+add_customer(custID_seq_ID.nextval,'Pranahith', 'Baltimore','pranahithbabu@gmail.com', 'MD', '21227');
+add_customer(custID_seq_ID.nextval,'Jaya Raj', 'New York','jayaraj@gmail.com', 'NY', '20904');
+add_customer(custID_seq_ID.nextval,'saivikas', 'Phoenix', 'saivikas@gmail.com','AZ', '20850');
+add_customer(custID_seq_ID.nextval,'sairajesh', 'Ellicott City','sairajesh@gmail.com', 'MD', '21043');
+add_customer(custID_seq_ID.nextval,'Ameenur Khan', 'Columbia', 'ameenurkhan@gmail.com','SC', '21044');
+
+--Insert into credit_cards tables
+insert into credit_cards values(44678, 1, 'VISA', 2028, 10);
+insert into credit_cards values(44679, 2, 'VISA', 2029, 08);
+insert into credit_cards values(44660, 3, 'VISA', 2030, 12);
+insert into credit_cards values(44681, 4, 'VISA', 2028, 10);
+insert into credit_cards values(47778, 5, 'AMEX', 2031, 10);
+insert into credit_cards values(47781, 6, 'AMEX', 2028, 10);
+insert into credit_cards values(58978, 1, 'DISCOVER', 2028, 10);
+insert into credit_cards values(67085, 4, 'MASTERCARD', 2028, 10);
+
+show_all_customers_in_state('MD');
+end;
+
+select * from customers;

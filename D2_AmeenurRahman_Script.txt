@@ -1,0 +1,296 @@
+-- Team Information
+-- Team: Maverick
+-- Member #: 6
+-- Name: Ameenur Rahman Khan -DJ46492
+
+-- Team Member Names:
+-- Jaya Raj Goru - ZF61058
+-- Sai Vikas Amaraneni - FS93533
+-- Preetham Madhamsetty - FJ09370
+-- Sai Rajesh Rapelli - HD49179
+-- Pranahith Babu Yarra - IW23456
+
+set serveroutput on;
+
+-- Clean-up: Dropping existing tables if they exist
+drop table recommendations;
+drop table reviews;
+drop table invoices;
+drop table credit_cards;
+drop table orders;
+drop table products;
+drop table product_categories;
+drop table customers;
+
+-- Table Creation: Define structure for 'customers' table with primary key
+CREATE table customers (
+	cust_ID INT,
+	cust_name VARCHAR(100),
+	cust_city VARCHAR(100),
+	cust_email VARCHAR(100),
+	cust_state VARCHAR(100),
+	cust_zip NUMBER(5),
+	PRIMARY KEY (cust_ID)
+);
+
+-- Table Creation: Define structure for 'product_categories' table with primary key
+CREATE table product_categories (
+	category_ID INT,
+	category_name VARCHAR(100),
+	category_description VARCHAR(100),
+	PRIMARY KEY (category_ID)
+);
+
+-- Table Creation: Define structure for 'products' table with foreign key relation to 'product_categories'
+CREATE table products (
+	prod_ID INT NOT NULL,
+	prod_name VARCHAR(100),
+	prod_quantity INT CONSTRAINT Valid_Quantity_Check CHECK (prod_quantity > 0),
+	prod_price FLOAT,
+	category_ID INT NOT NULL,
+	PRIMARY KEY (prod_ID),
+	FOREIGN KEY (category_ID) REFERENCES product_categories (category_ID)
+);
+
+-- Table Creation: Define structure for 'orders' table with foreign key relations to 'customers' and 'products'
+CREATE table orders (
+	order_ID INT,
+	cust_ID INT,
+	prod_ID INT,
+	order_quantity INT,
+	order_date DATE,
+	PRIMARY KEY (order_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (prod_ID) REFERENCES products(prod_ID)
+);
+
+-- Table Creation: Define structure for 'credit_cards' table with foreign key relation to 'customers'
+CREATE table credit_cards (
+	creditcard_number INT NOT NULL,
+	cust_ID INT,
+	creditcard_type VARCHAR(100),
+	creditcard_expyear INT,
+	creditcard_expmonth INT,
+	PRIMARY KEY (creditcard_number),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID)	
+);
+
+-- Table Creation: Define structure for 'invoices' table with foreign key relations to 'orders', 'customers', and 'credit_cards'
+CREATE table invoices (
+	invoice_ID INT,
+	order_ID INT,
+	cust_ID INT,
+	creditcard_number INT,
+	invoice_amount INT,
+	PRIMARY KEY (invoice_ID),
+	FOREIGN KEY (order_ID) REFERENCES orders(order_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (creditcard_number) REFERENCES credit_cards(creditcard_number)
+);
+
+-- Table Creation: Define structure for 'recommendations' table with foreign key relations to 'customers' and 'products'
+CREATE table recommendations (
+	rec_ID INT NOT NULL,
+	cust_ID INT,
+	rec_prodID INT,
+	rec_date DATE,
+	PRIMARY KEY (rec_ID),
+	FOREIGN KEY (cust_ID) REFERENCES customers(cust_ID),
+	FOREIGN KEY (rec_prodID) REFERENCES products(prod_ID)
+);
+
+-- Populating 'customers' table with initial data
+insert into customers values(1,'Preetham', 'Charloette','preetham@gmail.com', 'NC', '21338');
+insert into customers values(2,'Pranahith', 'Baltimore','pranahithbabu@gmail.com', 'MD', '21227');
+insert into customers values(3,'Jaya Raj', 'New York','jayaraj@gmail.com', 'NY', '20904');
+insert into customers values(4,'Sai Vikas', 'Phoenix', 'saivikas@gmail.com','AZ', '20850');
+insert into customers values(5,'Sai Rajesh', 'Ellicott City','sairajesh@gmail.com', 'MD', '21043');
+insert into customers values(6,'Ameenur Khan', 'Columbia', 'ameenurkhan@gmail.com','SC', '21044');
+
+-- Populating 'product_categories' table with initial data
+insert into product_categories values(1,'Clothing', 'Wide range of appareal suitable for daily wear');
+insert into product_categories values(2,'Electronics','Smartphone,tablets,Computers and laptops');
+insert into product_categories values(3,'Footwear', 'Step into fashion and comfort with our diverse range of footwear');
+insert into product_categories values(4,'Grocery', 'One step destination for essential food supplies');
+insert into product_categories values(5,'Furniture', 'Transform your living space with our furniture collection');
+
+-- Populating 'products' table with initial data including product details and categories
+insert into products values(1, '40inchTV', 100, 350, 2);
+insert into products values(2, 'T-shirt', 100, 30, 1);
+insert into products values(3, 'Nike shoes', 100, 45, 3);
+insert into products values(4, 'Sofa', 100, 1000, 5);
+insert into products values(5, 'Milk', 100, 4, 4);
+insert into products values(6, 'Chocolates', 100, 20, 4);
+insert into products values(7, 'Laptop', 100, 700, 2);
+insert into products values(8, 'Table', 100, 60, 5);
+
+-- Inserting initial credit card data into the 'credit_cards' table to establish customer payment records. This step ensures that each customer's payment method is accurately represented in the database.
+insert into credit_cards values(44678, 1, 'VISA', 2028, 10);
+insert into credit_cards values(44679, 2, 'VISA', 2029, 08);
+insert into credit_cards values(44660, 3, 'VISA', 2030, 12);
+insert into credit_cards values(44681, 4, 'VISA', 2028, 10);
+insert into credit_cards values(47778, 5, 'AMEX', 2031, 10);
+insert into credit_cards values(47781, 6, 'AMEX', 2028, 10);
+insert into credit_cards values(58978, 1, 'DISCOVER', 2028, 10);
+insert into credit_cards values(67085, 4, 'MASTERCARD', 2028, 10);
+
+-- Query to list all credit card details for data validation purposes.
+select * from credit_cards;
+
+--################# HELPER FUNCTIONS ############
+
+-- Retrieves customer ID using their email address as input.
+create or replace function find_customer_id(v_email in customers.cust_email%type) return customers.cust_id%type as
+v_id customers.cust_id%type;
+begin
+    select cust_id into v_id from customers where cust_email=v_email;
+    return v_id;
+exception
+    when no_data_found then
+    dbms_output.put_line('No customer found');
+    return -1;
+end;
+
+-- Function to find product category ID based on category name
+create or replace function find_product_category_id(v_catname in product_categories.category_name%type) return product_categories.category_id%type as
+v_id product_categories.category_id%type;
+begin
+    select category_id into v_id from product_categories where category_name=v_catname;
+    return v_id;
+exception
+    when no_data_found then
+    dbms_output.put_line('No category found');
+    return -1;
+end;
+
+-- Function to find product ID based on product name
+create or replace function find_product_id(v_pname in products.prod_name%type) return products.prod_id%type as
+v_id products.prod_id%type;
+begin
+    select prod_id into v_id from products where prod_name=v_pname;
+    return v_id;
+exception
+    when no_data_found then
+    dbms_output.put_line('No product found');
+    return -1;
+end;
+
+--############## MEMBER 6 #################
+--################# PROCEDURES/TASKS ############
+
+-- Defines a procedure to adjust inventory levels in the database following the placement of an order, ensuring stock quantities remain current.
+create or replace procedure update_inventory(v_pid in products.prod_id%type, v_pquant in INT) is
+var_availableQuantity int;
+begin
+    select prod_quantity into var_availableQuantity from products where prod_ID=v_pid;
+    update products set prod_quantity = var_availableQuantity-v_pquant where prod_ID=v_pid;
+    commit;
+    dbms_output.put_line('Inventory Updated');
+exception
+    when no_data_found then
+        dbms_output.put_line('Product not found');
+    when others then
+        dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+        dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+-- Procedure for Generating Invoices for Customer Orders
+-- Drops existing sequence and creates a new one for invoice IDs
+drop sequence inv_seq_id;
+create sequence inv_seq_id start with 1 increment by 1;
+
+-- This procedure generates an invoice for each customer order, linking customer, order, and credit card details
+create or replace procedure invoice_customer(v_oId in invoices.order_ID%type, v_cEmail in customers.cust_email%type, v_ccNum in invoices.creditcard_number%type, v_invAmount in invoices.invoice_amount%type) as
+var_custId customers.cust_ID%type;
+begin
+    var_custId := find_customer_id(v_cEmail);
+    if var_custId != -1 then
+        insert into invoices values(inv_seq_id.nextval, v_oId, var_custId, v_ccNum, v_invAmount);
+        dbms_output.put_line('Invoice created');
+        commit;
+    else
+        dbms_output.put_line('Customer not found');
+    end if;
+exception
+    when others then
+        dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+        dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+-- Procedure for Placing Orders
+-- Drops existing sequence and creates a new one for order IDs
+drop sequence ord_seq_id;
+create sequence ord_seq_id start with 1 increment by 1;
+
+-- This procedure handles order placement, inventory updates, and invoice generation
+create or replace procedure place_order(v_cemail in customers.cust_email%type, v_pname in products.prod_name%type, v_pquant in products.prod_quantity%type, v_ccnum in credit_cards.creditcard_number%type, v_odate orders.order_date%type) as
+var_cId customers.cust_ID%type;
+var_pId products.prod_ID%type;
+var_invAmount invoices.invoice_amount%type;
+begin
+    var_cId := find_customer_id(v_cemail);
+    var_pId := find_product_id(v_pname);
+    if var_cId!=-1 and var_pId!=-1 then
+        update_inventory(var_pId,v_pquant);
+        select prod_price*v_pquant into var_invAmount from products where prod_ID=var_pId;
+        insert into orders values(ord_seq_id.nextval,var_cId,var_pId,v_pquant,v_odate);
+        invoice_customer(ord_seq_id.currval,v_cemail,v_ccnum,var_invAmount);
+        commit;
+        dbms_output.put_line('Order placed');
+    else
+        dbms_output.put_line('Customer or Product does not exist');
+    end if;
+exception
+    when others then
+        dbms_output.put_line ('SQLCODE: ' || SQLCODE);
+        dbms_output.put_line ('SQLERRM: ' || SQLERRM);
+end;
+
+-- Displaying Invoices for Verification
+select * from invoices;
+
+-- Procedure for Calculating Total Income by State
+create or replace procedure income_by_state as
+cursor c1 is select c.cust_state, sum(i.invoice_amount) from customers c, invoices i where c.cust_id=i.cust_id group by c.cust_state having sum(i.invoice_amount)>0;
+var_state customers.cust_state%type;
+var_amount invoices.invoice_amount%type;
+begin
+    open c1;
+    loop
+        fetch c1 into var_state, var_amount;
+        exit when c1%notfound;
+        dbms_output.put_line('State: '||var_state||', Total Amount of Purchases (in $): '||var_amount);
+    end loop;
+    close c1;
+end;
+
+-- Executing procedure to get total income by state
+exec income_by_state;
+
+-- Procedure for Listing Best Selling Products
+create or replace procedure best_selling_products(v_num in number) is
+cursor c1 is select p.prod_name, pc.category_name, sum(o.order_quantity) as total_units_sold, sum(i.invoice_amount) as total_amount_collected from product_categories pc, products p, orders o, invoices i where pc.category_id=p.category_id and p.prod_id=o.prod_id and o.order_id=i.order_id group by p.prod_name, pc.category_name order by total_units_sold desc;
+rec1 c1%rowtype;
+var_ordercount number;
+begin
+    var_orderCount := 0;
+    open c1;
+    loop
+        fetch c1 into rec1;
+        exit when c1%notfound or var_orderCount>v_num;
+        dbms_output.put_line('Product Name: '||rec1.prod_name||', Product Category: '||rec1.category_name||', Total Number of Units Sold: '||rec1.total_units_sold||', Total amount collected (in dollars): '||rec1.total_amount_collected);
+        var_orderCount:=var_orderCount+1;
+    end loop;
+    close c1;
+end;
+
+-- Executing procedure to display best selling products
+begin
+    best_selling_products(3);
+end;
+
+-- Example Anonymous Block to Demonstrate Placing an Order
+begin
+    place_order('pranahithbabu@gmail.com','40inchTV',2,44679,sysdate);
+    -- Other functionalities like showing orders can be added here
+end;
