@@ -18,13 +18,7 @@ Deliverable D4: Demo – December 19, 2023
 Included the ERD for your project, explaining the relationships between entities, attributes, and any constraints. Used diagrams or textual descriptions to make it clear.
 
 # Deliverable D2 (First PL/SQL operations – November 21, 2023): 
-By this date, the group had progressed in developing the core functionality by developing and implementing the first set of PL/SQL operations 
+By this date, the group had progressed in developing the core functionality by developing and implementing the first set of PL/SQL operations.
 
-# Deliverable D3 (Complete PL/SQL operations – December 16, 2023): 
-To ensure the program's complete functioning, our team planned to complete and implement the whole set of PL/SQL operations. With this milestone, the main coding process is over.
-
-# Deliverable D4 (Demo – December 19, 2023): 
-Our team presented a live demonstration that has been created, showcasing its features, functionality, and general operations on this date. This is an essential stage before to submitting the completed project.
- 
 # Usage
-Explained how to use the project, including any commands, configurations, or input/output details. Also, provided examples to demonstrate functionality
+Explained how to use the project, including any commands, configurations, or input/output details. Also, provided examples to demonstrate functionality.
