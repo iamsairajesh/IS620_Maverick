@@ -20,5 +20,8 @@ Included the ERD for your project, explaining the relationships between entities
 # Deliverable D2 (First PL/SQL operations – November 21, 2023): 
 By this date, the group had progressed in developing the core functionality by developing and implementing the first set of PL/SQL operations.
 
+# Deliverable D3 (Complete PL/SQL operations – December 16, 2023): 
+To ensure the program's complete functioning, our team planned to complete and implement the whole set of PL/SQL operations. With this milestone, the main coding process is over.
+
 # Usage
 Explained how to use the project, including any commands, configurations, or input/output details. Also, provided examples to demonstrate functionality.
